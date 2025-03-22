@@ -1,17 +1,16 @@
 package com.eric.lbms.service;
 
-import com.eric.lbms.model.Book;
-import com.eric.lbms.model.BorrowRecord;
-import com.eric.lbms.model.BorrowStatus;
-import com.eric.lbms.model.User;
+import com.eric.lbms.model.*;
 import com.eric.lbms.repository.*;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 @Service
@@ -73,5 +72,18 @@ public class BorrowService {
         return borrowRecordRepository.save(record);
     }
 
+    public Page<BorrowRecord> getUserBorrowHistory(Long userId, Pageable pageable) {
+        log.info("User {} borrow history", userId);
+        return borrowRecordRepository.findByUserId(userId, pageable);
+    }
 
+    public List<UserBorrowSummary> getBorrowSummary() {
+        log.info("Fetching borrow summary for all users");
+        return userBorrowSummaryRepository.findAll();
+    }
+
+    public List<OverdueBook> getOverdueBooks() {
+        log.info("Fetching overdue books for all users");
+        return overdueBookRepository.findAll();
+    }
 }
