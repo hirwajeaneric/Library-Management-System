@@ -42,6 +42,3 @@ public class BorrowRecord {
     }
 }
 
-enum BorrowStatus {
-    BORROWED, RETURNED, OVERDUE
-}
