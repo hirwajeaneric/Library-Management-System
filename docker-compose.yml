@@ -1,0 +1,55 @@
+version: '3.8'  # Specifies the Docker Compose file format version
+
+services:
+  # PostgreSQL Database Service
+  db:
+    image: postgres:15  # Official PostgreSQL image, version 15 (latest stable as of early 2025)
+    container_name: library-postgres  # Name of the container for easy reference
+    environment:
+      POSTGRES_DB: library_db  # Name of the database to create
+      POSTGRES_USER: eric  # Database username
+      POSTGRES_PASSWORD: Hirwa123!  # Database password (change this in production)
+    ports:
+      - "5432:5432"  # Maps host port 5432 to container port 5432
+    volumes:
+      - postgres-data:/var/lib/postgresql/data  # Persists database data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql  # Mounts SQL script to initialize views
+    networks:
+      - library-network  # Custom network for service communication
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]  # Checks if PostgreSQL is ready
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Spring Boot Application Service
+  app:
+    build:
+      context: .  # Build context is the current directory (where Dockerfile is located)
+      dockerfile: Dockerfile  # Specifies the Dockerfile to use
+    container_name: library-app  # Name of the container
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/library_db  # Connects to PostgreSQL service
+      SPRING_DATASOURCE_USERNAME: eric  # Matches POSTGRES_USER
+      SPRING_DATASOURCE_PASSWORD: Hirwa123!  # Matches POSTGRES_PASSWORD
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update  # Auto-updates schema
+      SPRING_JPA_SHOW_SQL: true  # Logs SQL statements
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect  # PostgreSQL dialect
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK: INFO  # Spring logging level
+      LOGGING_LEVEL_COM_EXAMPLE_LIBRARY: DEBUG  # App-specific logging level
+    ports:
+      - "8080:8080"  # Maps host port 8080 to container port 8080
+    depends_on:
+      db:
+        condition: service_healthy  # Waits for PostgreSQL to be healthy before starting
+    networks:
+      - library-network  # Same network as PostgreSQL
+
+# Named volume for persistent PostgreSQL data
+volumes:
+  postgres-data:
+
+# Custom network for service communication
+networks:
+  library-network:
+    driver: bridge  # Default bridge network
