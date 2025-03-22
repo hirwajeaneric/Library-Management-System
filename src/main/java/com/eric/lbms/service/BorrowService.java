@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
 
@@ -51,4 +52,26 @@ public class BorrowService {
         log.info("User {} borrowed book {}", user.getId(), book.getId());
         return borrowRecordRepository.save(record);
     }
+
+    @Transactional
+    public BorrowRecord returnBook(Long recordId) {
+        BorrowRecord record = borrowRecordRepository.findById(recordId)
+                .orElseThrow(() -> new NoSuchElementException("Borrow record not found"));
+
+        if (record.getStatus() != BorrowStatus.BORROWED) {
+            throw new IllegalStateException("Book is not currently borrowed");
+        }
+
+        record.setReturnDate(LocalDateTime.now());
+        record.setStatus(record.getDueDate().isBefore(LocalDateTime.now()) ? BorrowStatus.OVERDUE : BorrowStatus.RETURNED);
+
+        Book book = record.getBook();
+        book.setAvailableCopies(book.getAvailableCopies() + 1);
+        bookRepository.save(book);
+
+        log.info("Book {} returned by user {}", book.getId(), record.getUser().getUsername());
+        return borrowRecordRepository.save(record);
+    }
+
+
 }
